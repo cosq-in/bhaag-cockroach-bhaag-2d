@@ -74,7 +74,7 @@ test('open lanes are reachable with one swipe and rows are >= 0.7s apart at full
         const fresh = s.items.slice(before);
         const rows = fresh.filter((it) => it.cat === 'obstacle' && (it.kind === 'block' || it.kind === 'low' || it.kind === 'high'));
         const blocks = rows.filter((it) => it.kind === 'block');
-        if (blocks.length === 2) {
+        if (rows.length === 2 && blocks.length >= 1) {
           const taken = new Set(rows.map((it) => it.lane));
           const open = [0, 1, 2].find((l) => !taken.has(l));
           if (prevOpen !== undefined) assert.ok(Math.abs(open - prevOpen) <= 1, `seed ${seed} d ${d}`);
