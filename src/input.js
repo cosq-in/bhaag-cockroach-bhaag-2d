@@ -65,7 +65,10 @@ export function attachInput(target, onIntent) {
   };
   target.addEventListener('touchstart', (e) => {
     e.preventDefault();
-    if (swipe.origin) return;
+    if (swipe.origin) {
+      if (e.touches.length > 1) return;
+      swipe.end(swipe.id);
+    }
     const t = e.changedTouches[0];
     swipe.start(t.clientX, t.clientY, t.identifier);
     onIntent('touch');
