@@ -43,3 +43,29 @@ test('swipes use the dominant axis and a threshold', () => {
   assert.equal(swipeIntent(5, 80), 'slide');
   assert.equal(swipeIntent(10, 10), null);
 });
+
+test('a second finger does not disturb the first finger gesture', () => {
+  const t = new SwipeTracker(30);
+  t.start(100, 100, 1);
+  t.start(300, 300, 2);
+  assert.equal(t.move(0, 0, 2), null);
+  assert.equal(t.end(2), null);
+  assert.equal(t.move(60, 100, 1), 'left');
+  assert.equal(t.end(1), null);
+});
+
+test('a tap by the first finger survives a second finger lifting', () => {
+  const t = new SwipeTracker(30);
+  t.start(100, 100, 1);
+  t.start(200, 200, 2);
+  t.end(2);
+  assert.equal(t.end(1), 'tap');
+});
+
+test('the second finger can start a gesture after the first ends', () => {
+  const t = new SwipeTracker(30);
+  t.start(0, 0, 1);
+  t.end(1);
+  t.start(0, 200, 2);
+  assert.equal(t.move(0, 150, 2), 'jump');
+});

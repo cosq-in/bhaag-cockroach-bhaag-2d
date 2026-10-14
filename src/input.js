@@ -23,24 +23,28 @@ export class SwipeTracker {
     this.threshold = threshold;
     this.origin = null;
     this.fired = false;
+    this.id = undefined;
   }
 
-  start(x, y) {
+  start(x, y, id) {
+    if (this.origin) return;
     this.origin = { x, y };
+    this.id = id;
     this.fired = false;
   }
 
-  move(x, y) {
-    if (!this.origin || this.fired) return null;
+  move(x, y, id) {
+    if (!this.origin || this.fired || id !== this.id) return null;
     const intent = swipeIntent(x - this.origin.x, y - this.origin.y, this.threshold);
     if (intent) this.fired = true;
     return intent;
   }
 
-  end() {
-    if (!this.origin) return null;
+  end(id) {
+    if (!this.origin || id !== this.id) return null;
     const tap = this.fired ? null : 'tap';
     this.origin = null;
+    this.id = undefined;
     this.fired = false;
     return tap;
   }
@@ -55,23 +59,34 @@ export function attachInput(target, onIntent) {
   });
 
   const swipe = new SwipeTracker();
+  const tracked = (e) => {
+    for (const t of e.changedTouches) if (t.identifier === swipe.id) return t;
+    return null;
+  };
   target.addEventListener('touchstart', (e) => {
     e.preventDefault();
+    if (swipe.origin) return;
     const t = e.changedTouches[0];
-    swipe.start(t.clientX, t.clientY);
+    swipe.start(t.clientX, t.clientY, t.identifier);
     onIntent('touch');
   }, { passive: false });
   target.addEventListener('touchmove', (e) => {
     e.preventDefault();
-    const t = e.changedTouches[0];
-    const intent = swipe.move(t.clientX, t.clientY);
+    const t = tracked(e);
+    if (!t) return;
+    const intent = swipe.move(t.clientX, t.clientY, t.identifier);
     if (intent) onIntent(intent);
   }, { passive: false });
   target.addEventListener('touchend', (e) => {
     e.preventDefault();
-    const tap = swipe.end();
+    const t = tracked(e);
+    if (!t) return;
+    const tap = swipe.end(t.identifier);
     if (tap) onIntent(tap);
   }, { passive: false });
-  target.addEventListener('touchcancel', () => swipe.end());
+  target.addEventListener('touchcancel', (e) => {
+    const t = tracked(e);
+    if (t) swipe.end(t.identifier);
+  });
   target.addEventListener('mousedown', () => onIntent('tap'));
 }
