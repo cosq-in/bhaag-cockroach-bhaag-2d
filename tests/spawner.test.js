@@ -62,3 +62,34 @@ test('gas drifts across lanes unless meme drop is active', () => {
   s.update(0.1, 0, stage, 0, false);
   assert.ok(s.items[0].lane > 1);
 });
+
+test('open lanes are reachable with one swipe and rows are >= 0.7s apart at full speed', () => {
+  for (let seed = 1; seed <= 60; seed++) {
+    for (const d of [0, 0.25, 0.5, 0.75, 1]) {
+      const s = new Spawner(mulberry32(seed));
+      let prevOpen;
+      for (let n = 0; n < 40; n++) {
+        const before = s.items.length;
+        s.spawnPattern(stage, d);
+        const fresh = s.items.slice(before);
+        const rows = fresh.filter((it) => it.cat === 'obstacle' && (it.kind === 'block' || it.kind === 'low' || it.kind === 'high'));
+        const blocks = rows.filter((it) => it.kind === 'block');
+        if (blocks.length === 2) {
+          const taken = new Set(rows.map((it) => it.lane));
+          const open = [0, 1, 2].find((l) => !taken.has(l));
+          if (prevOpen !== undefined) assert.ok(Math.abs(open - prevOpen) <= 1, `seed ${seed} d ${d}`);
+          prevOpen = open;
+        }
+      }
+    }
+  }
+  const s = new Spawner(mulberry32(7));
+  s.update(1 / 60, 70, stage, 1, false);
+  assert.ok(s.cooldown / 70 >= 0.7 - 1e-9);
+});
+
+test('cooldown never collapses when speed is zero', () => {
+  const s = new Spawner(mulberry32(8));
+  s.update(1 / 60, 0, stage, 0, false);
+  assert.ok(s.cooldown >= 10 * 0.7);
+});

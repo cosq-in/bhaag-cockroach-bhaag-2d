@@ -11,6 +11,7 @@ export class Spawner {
   reset() {
     this.items = [];
     this.cooldown = 0;
+    this.lastOpen = undefined;
   }
 
   update(dt, speed, stage, difficulty, memeActive) {
@@ -29,7 +30,7 @@ export class Spawner {
     this.cooldown -= dz;
     if (this.cooldown <= 0) {
       this.spawnPattern(stage, difficulty);
-      this.cooldown = 38 - 20 * difficulty;
+      this.cooldown = Math.max(speed, 10) * Math.max(0.7, 1.3 - 0.6 * difficulty);
     }
   }
 
@@ -48,11 +49,13 @@ export class Spawner {
 
   spawnPattern(stage, difficulty) {
     const lanes = [0, 1, 2];
-    const open = Math.floor(this.rng() * 3);
+    const choices = this.lastOpen === undefined ? lanes : lanes.filter((l) => Math.abs(l - this.lastOpen) <= 1);
+    const open = choices[Math.floor(this.rng() * choices.length)];
     const others = lanes.filter((l) => l !== open);
     const r = this.rng();
     if (r < 0.25) {
       for (const l of others) this.#add(stage, 'obstacle', 'block', l, 0);
+      this.lastOpen = open;
       this.#coins(stage, open, 4, 0);
     } else if (r < 0.45) {
       for (const l of lanes) this.#add(stage, 'obstacle', 'low', l, 0);
@@ -63,6 +66,7 @@ export class Spawner {
     } else if (r < 0.85) {
       this.#add(stage, 'obstacle', 'block', others[0], 0);
       this.#add(stage, 'obstacle', this.rng() < 0.5 ? 'low' : 'high', others[1], 0);
+      this.lastOpen = open;
       this.#coins(stage, open, 4, 0);
     } else if (difficulty > 0.2) {
       const lane = Math.floor(this.rng() * 3);
