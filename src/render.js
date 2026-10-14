@@ -202,28 +202,39 @@ function bar(ctx, x, y, bw, bh, frac, color) {
 }
 
 function drawHud(ctx, w, h, u, g) {
-  const fs = 22 * u;
+  const fs = Math.max(16, 22 * u);
   text(ctx, `Score ${Math.floor(g.score)}`, 14, 12, fs, '#fff', 'left');
   text(ctx, `Best ${Math.floor(g.hi)}`, w - 14, 12, fs, '#ffd27a', 'right');
-  text(ctx, `Stage ${g.stage.id}: ${g.stage.name}`, w / 2, 12, fs * 0.9, '#fff');
-  if (g.mult > 1) text(ctx, `x${g.mult}`, 14, 12 + fs * 1.3, fs, '#7CFC9A', 'left');
+  const row2 = 12 + fs * 1.3;
+  text(ctx, `Stage ${g.stage.id}: ${g.stage.name}`, w / 2, row2, fs * 0.9, '#fff');
+  if (g.mult > 1) text(ctx, `x${g.mult}`, 14, row2, fs, '#7CFC9A', 'left');
 
   const bw = 150 * u;
   const bh = 10 * u;
   const by = h - SAFE_BOTTOM - bh;
-  text(ctx, 'INSPECTOR', 14, by - 20 * u, 12 * u, '#fff', 'left');
+  const lab = Math.max(12, 12 * u);
+  text(ctx, 'INSPECTOR', 14, by - 20 * u, lab, '#fff', 'left');
   bar(ctx, 14, by, bw, bh, 1 - g.chaser.gap / MAX_GAP, '#e74c3c');
-  text(ctx, 'WITNESS', w - 14 - bw, by - 20 * u, 12 * u, '#fff', 'left');
+  text(ctx, 'WITNESS', w - 14 - bw, by - 20 * u, lab, '#fff', 'left');
   bar(ctx, w - 14 - bw, by, bw, bh, g.powerups.meter / 100, '#4fc3f7');
   if (g.powerups.banked) {
-    text(ctx, BANKED_ICON[g.powerups.banked], w - 14, by - 64 * u, 34 * u, '#fff', 'right');
-    if (g.touch) text(ctx, 'TAP', w - 14, by - 26 * u - 38 * u, 12 * u, '#ffd27a', 'right');
+    const iconSize = 34 * u;
+    const iconY = by - 64 * u;
+    text(ctx, BANKED_ICON[g.powerups.banked], w - 14, iconY, iconSize, '#fff', 'right');
+    if (g.touch) text(ctx, 'TAP', w - 14, iconY + iconSize * 1.2, lab, '#ffd27a', 'right');
   }
 
-  g.popups.forEach((p, i) => {
+  let py = h * 0.22;
+  const psize = fs * 1.1;
+  for (const p of g.popups) {
     ctx.globalAlpha = Math.min(1, p.t);
-    text(ctx, p.text, w / 2, h * 0.22 + i * fs * 1.5, fs * 1.1, '#fff');
-  });
+    ctx.font = `${Math.max(4, psize)}px ${FONT}`;
+    for (const ln of wrap(ctx, p.text, w - 32)) {
+      text(ctx, ln, w / 2, py, psize, '#fff');
+      py += psize * 1.3;
+    }
+    py += psize * 0.3;
+  }
   ctx.globalAlpha = 1;
   if (g.boss) {
     const pulse = 1 + Math.sin(g.t * 8) * 0.06;
@@ -235,9 +246,14 @@ function overlay(ctx, w, h, u, lines) {
   ctx.fillStyle = 'rgba(10,5,20,0.65)';
   ctx.fillRect(0, 0, w, h);
   let y = h * 0.3;
-  for (const [s, size, color] of lines) {
-    text(ctx, s, w / 2, y, size * u, color);
-    y += size * u * 1.5;
+  for (const [s, size, color, min = 4] of lines) {
+    const px = Math.max(min, size * u);
+    ctx.font = `${px}px ${FONT}`;
+    const parts = ctx.measureText(s).width > w - 24 ? wrap(ctx, s, w - 24) : [s];
+    for (const part of parts) {
+      text(ctx, part, w / 2, y, px, color);
+      y += px * 1.5;
+    }
   }
 }
 
@@ -255,12 +271,12 @@ export function drawFrame(ctx, w, h, g) {
       ['DELHI RUNNER', 54, '#ffd27a'],
       ['Cockroach Janta Party edition (fan satire)', 20, '#fff'],
       g.touch
-        ? ['Swipe left/right to change lane,', 16, '#ddd']
-        : ['Arrows / WASD to run. Space for power-ups.', 16, '#ddd'],
+        ? ['Swipe left/right to change lane,', 16, '#ddd', 14]
+        : ['Arrows / WASD to run. Space for power-ups.', 16, '#ddd', 14],
       g.touch
-        ? ['up to jump, down to slide. Tap = power-up.', 16, '#ddd']
-        : ['Up jumps, down slides.', 16, '#ddd'],
-      ['Dodge the inspector. Collect witnesses.', 16, '#ddd'],
+        ? ['up to jump, down to slide. Tap = power-up.', 16, '#ddd', 14]
+        : ['Up jumps, down slides.', 16, '#ddd', 14],
+      ['Dodge the inspector. Collect witnesses.', 16, '#ddd', 14],
       [g.touch ? 'Tap to start' : 'Tap or press Enter to start', 26, '#7CFC9A'],
     ]);
   } else if (g.state === 'over') {
