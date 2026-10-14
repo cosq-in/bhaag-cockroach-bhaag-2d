@@ -7,7 +7,7 @@ const MELODY = [5, 7, 6, 5, 4, 2, 3, 4, 5, 7, 8, 7, 6, 4, 5, 3];
 const freqOf = (deg) => 220 * 2 ** ((SCALE[deg % 5] + 12 * Math.floor(deg / 5)) / 12);
 
 function tone(freq, dur, type = 'square', vol = 0.04, delay = 0) {
-  if (!ctx || muted) return;
+  if (!ctx || muted || ctx.state !== 'running') return;
   const t = ctx.currentTime + delay;
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
@@ -21,18 +21,24 @@ function tone(freq, dur, type = 'square', vol = 0.04, delay = 0) {
 }
 
 function tick() {
+  if (!ctx || ctx.state !== 'running') return;
   tone(freqOf(MELODY[step % MELODY.length]), 0.16, 'square', 0.025);
   if (step % 4 === 0) tone(110, 0.3, 'triangle', 0.05);
   step += 1;
 }
 
 export function initAudio() {
-  if (ctx) return;
-  try {
-    ctx = new (window.AudioContext || window.webkitAudioContext)();
-    setInterval(tick, 200);
-  } catch {
-    ctx = null;
+  if (!ctx) {
+    try {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      setInterval(tick, 200);
+    } catch {
+      ctx = null;
+      return;
+    }
+  }
+  if (ctx.state !== 'running') {
+    try { ctx.resume?.()?.catch(() => {}); } catch { /* ignore */ }
   }
 }
 

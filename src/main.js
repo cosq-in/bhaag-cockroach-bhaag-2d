@@ -58,7 +58,7 @@ function drainEvents() {
 let last = performance.now();
 let acc = 0;
 function frame(now) {
-  const dt = Math.min(0.1, (now - last) / 1000);
+  const dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
   last = now;
   if (!document.hidden) acc += dt;
   while (acc >= STEP) { step(game, STEP); acc -= STEP; }
@@ -67,6 +67,15 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-(document.fonts?.load(`20px "Permanent Marker"`) ?? Promise.resolve())
-  .catch(() => {})
-  .finally(() => requestAnimationFrame(frame));
+let started = false;
+function startLoop() {
+  if (started) return;
+  started = true;
+  requestAnimationFrame(frame);
+}
+
+const fontLoad = document.fonts?.load(`20px "Permanent Marker"`) ?? Promise.resolve();
+Promise.race([
+  fontLoad.catch(() => {}),
+  new Promise((r) => setTimeout(r, 1500)),
+]).then(startLoop);
