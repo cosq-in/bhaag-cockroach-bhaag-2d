@@ -1,7 +1,7 @@
 import { createGame, applyIntent, step } from './game.js';
 import { drawFrame } from './render.js';
 import { attachInput } from './input.js';
-import { initAudio, sfx, toggleMute } from './audio.js';
+import { initAudio, sfx, toggleMute, setPaused } from './audio.js';
 
 const HI_KEY = 'delhiRunnerHi';
 const STEP = 1 / 60;
@@ -56,6 +56,21 @@ function drainEvents() {
 }
 
 let last = performance.now();
+
+function persistHi() {
+  if (game.state === 'play') saveHi(Math.max(game.hi, Math.floor(game.score)));
+  else if (game.state === 'over') saveHi(game.hi);
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    setPaused(true);
+    persistHi();
+  } else {
+    last = performance.now();
+    setPaused(false);
+  }
+});
+window.addEventListener('pagehide', persistHi);
 let acc = 0;
 function frame(now) {
   const dt = Math.min(0.1, Math.max(0, (now - last) / 1000));

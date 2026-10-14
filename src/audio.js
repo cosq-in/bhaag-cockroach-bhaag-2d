@@ -42,6 +42,14 @@ export function initAudio() {
   }
 }
 
+export function setPaused(paused) {
+  if (!ctx) return;
+  try {
+    const p = paused ? ctx.suspend?.() : ctx.resume?.();
+    p?.catch?.(() => {});
+  } catch { /* ignore */ }
+}
+
 export function toggleMute() {
   muted = !muted;
   return muted;
