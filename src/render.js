@@ -268,7 +268,8 @@ export function drawFrame(ctx, w, h, g) {
   drawHud(ctx, w, h, u, g);
   if (g.state === 'menu') {
     overlay(ctx, w, h, u, [
-      ['DELHI RUNNER', 54, '#ffd27a'],
+      ['BHAAG COCKROACH BHAAG', 44, '#ffd27a'],
+      ['Resign kar yaar.', 22, '#ff9f6b'],
       ['Cockroach Janta Party edition (fan satire)', 20, '#fff'],
       g.touch
         ? ['Swipe left/right to change lane,', 16, '#ddd', 14]
